@@ -1,0 +1,17 @@
+spring:
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+  datasource:
+    url: jdbc:mysql://localhost:3306/web?serverTimezone=UTC
+    username: root
+    password: 456@852
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database: mysql
+server:
+  port: 8080

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+
+
+<!--引入JS-->
+<link rel="stylesheet" type="text/css" href="https://cdn.bootcss.com/webuploader/0.1.1/webuploader.css"
+      xmlns:th="http://www.w3.org/1999/xhtml">
+<script src="http://lib.sinaapp.com/js/jquery/2.0.2/jquery-2.0.2.min.js"></script>
+<script src="https://cdn.bootcss.com/webuploader/0.1.1/webuploader.js"></script>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout"
+      layout:decorator="base/layout.html">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload</title>
+</head>
+<body>
+<div id="UpArea" style="margin-left: 250px;margin-top: 100px;float: left">
+    <div id="uploader" class="wu-example">
+        <!--用来存放文件信息-->
+        <div id="thelist" class="uploader-list"></div>
+        <div class="btns">
+            <div id="picker" style="float: left">选择文件</div>
+            <button id="ctlBtn" class="btn btn-default" style="float: left">开始上传</button>
+        </div>
+    </div>
+</div>
+<div id="ShowArea" style="margin-right: 250px;margin-top: 100px;float: right">
+    <table>
+        <thead>
+        <tr>
+            <td>文件名</td>
+            <td>操作</td>
+
+        </tr>
+        </thead>
+        <tbody th:each="file:${fileList}">
+        <tr>
+<!--            <td th:text="${file.getFname()}"></td>-->
+            <td><a th:href="${file.getUrl()}" th:text="${file.getFname()}" download=""></a></td>
+            <td>
+                <button class = "del">删除</button>
+            </td>
+<!--            <td>-->
+<!--                <button class = "down">下载</button>-->
+<!--            </td>-->
+        </tr>
+        </tbody>
+    </table>
+</div>
+<!--<div class="progress progress-striped active">-->
+<!--    <div class="progress-bar" role="progressbar" style="width: 50%">-->
+<!--    </div>-->
+<!--</div>-->
+<!--<progress value="0" max="100"></progress>-->
+</body>
+</html>
+
+<script type="text/javascript">
+
+    let uploader = WebUploader.create({
+        // swf文件路径
+        swf: 'https://cdn.bootcss.com/webuploader/0.1.1/Uploader.swf',
+        // auto: true,
+        // 文件接收服务端。
+        server: '/fileupload',
+        multiple: true,
+        // 选择文件的按钮。可选。
+        // 内部根据当前运行是创建，可能是input元素，也可能是flash.
+        pick: '#picker',
+        method: 'POST',
+        // 不压缩image, 默认如果是jpeg，文件上传前会压缩一把再上传！
+        // resize: false
+    });
+
+    uploader.on('fileQueued', function (file) {
+        console.log(file.ext) // 获取文件的后缀
+        console.log(file.size) // 获取文件的大小
+        console.log(file.name);
+        $("#thelist").append('<div id="' + file.id + '" class="item">' +
+            '<h4 class="info">' + file.name + '</h4>' +
+            '<p class="state">等待上传...</p>' +
+            '<progress value="0" max="100"></progress>' +
+            '</div>');
+    });
+
+    $("#ctlBtn").click(function () {
+        uploader.upload(); //上传
+    })
+    // 文件上传过程中创建进度条实时显示。
+    uploader.on('uploadProgress', function (file, percentage) {
+        let li = $('#' + file.id);
+        let percent = li.find('.progress .progress-bar');
+
+        // 避免重复创建
+        // if ( !percent.length ) {
+        //     percent = $('<progress value="0" max="100"></progress>').appendTo( li ).find('.progress-bar');
+        // }
+
+        //数据正常，但进度条未显示
+
+        li.find('p.state').text('上传中');
+        //console.log(percentage); //上传进度
+        $("progress").attr("value", percentage * 100);
+        percent.css('width', percentage * 100 + '%');
+
+    });
+
+    uploader.on('uploadSuccess', function (file) {
+        $('#' + file.id).find('p.state').text('已上传');
+    });
+    uploader.on('uploadError', function (file) {
+        $('#' + file.id).find('p.state').text('上传出错');
+    });
+    uploader.on('uploadComplete', function (file) {
+        $('#' + file.id).find('progress').fadeOut();
+        //alert("上传完毕");
+        //window.location.reload();
+    });
+
+    //删除文件
+    $(".del").click(function () {
+        if(confirm("确认要删除吗？")) {
+            let a = $(this).parent().prev().text();
+            $.ajax({
+                url:"/delete",
+                method:"post",
+                data:{filename:a},
+                datatype:"json",
+                success:function (data) {
+                    if(data == "ok") {
+                        alert("删除成功");
+                        window.location.reload();
+                    }
+                    else {
+                        alert("错误!")
+                    }
+                }
+            })
+        }
+    })
+
+    //下载文件
+    // $(".down").click(function () {
+    //     let a = $(this).parent().prev().prev().text()
+    //     $.ajax({
+    //         url:"/download",
+    //         method:"post",
+    //         data:{filename:a},
+    //         datatype:"json",
+    //         success:function (data) {
+    //             console.log(data);
+    //             //ajaxFileDownload(data,a);
+    //             // if(data == "ok") {
+    //             //     alert(data);
+    //             //     window.location.reload();
+    //             // }
+    //             // else {
+    //             //     //alert("错误55")
+    //             // }
+    //         },
+    //         error:function (data) {
+    //             alert(data);
+    //         }
+    //     })
+    // })
+    //
+    // function ajaxFileDownload(data,filename) {
+    //     var a = document.createElement('a');
+    //     var bstr = atob(data), n = bstr.length, u8arr = new Uint8Array(n);
+    //     while (n--) {
+    //         u8arr[n] = bstr.charCodeAt(n);
+    //     }
+    //     var blob =  new Blob([u8arr], { type: "application/octet-stream" });
+    //     var url = window.URL.createObjectURL(blob);
+    //     a.href = url;
+    //     a.download = filename;
+    //     a.click();
+    //     window.URL.revokeObjectURL(url);
+    // }
+
+</script>
